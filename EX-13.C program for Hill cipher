@@ -1,0 +1,54 @@
+#include <stdio.h>
+void findModInverse(int a, int m, int* x, int* y) {
+    if (m == 0) {
+        *x = 0;
+        *y = 1;
+    } else {
+        int x1, y1;
+        findModInverse(m, a % m, &x1, &y1);
+        *x = y1 - (a / m) * x1;
+        *y = x1;
+    }
+}
+int modInverse(int a, int m) {
+    int x, y;
+    findModInverse(a, m, &x, &y);
+    return (x % m + m) % m;
+}
+void findKey(int plaintext[][2], int ciphertext[][2], int key[2][2]) {
+    int det = (plaintext[0][0] * plaintext[1][1] - plaintext[0][1] * plaintext[1][0]) % 26;
+    det = (det % 26 + 26) % 26;
+    int detInv = modInverse(det, 26);
+
+    int adj[2][2] = {{plaintext[1][1], -plaintext[0][1]}, {-plaintext[1][0], plaintext[0][0]}};
+
+    for (int i = 0; i < 2; i++) {
+        for (int j = 0; j < 2; j++) {
+            key[i][j] = (adj[i][j] * detInv * ciphertext[i][j]) % 26;
+            if (key[i][j] < 0) {
+                key[i][j] += 26;
+            }
+        }
+    }
+}
+int main() {
+    int plaintext[][2] = {{4, 11}, {2, 15}};
+    int ciphertext[][2] = {{10, 7}, {15, 18}};
+
+    int key[2][2];
+    findKey(plaintext, ciphertext, key);
+
+    printf("Key:\n");
+    for (int i = 0; i < 2; i++) {
+        for (int j = 0; j < 2; j++) {
+            printf("%d ", key[i][j]);
+        }
+        printf("\n");
+    }
+    return 0;
+}
+
+output
+Key:
+6 24 
+13 10 
