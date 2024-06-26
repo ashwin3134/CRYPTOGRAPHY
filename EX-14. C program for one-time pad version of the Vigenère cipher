@@ -1,0 +1,43 @@
+#include <stdio.h>
+#include <string.h>
+#define ALPHABET_SIZE 26
+
+void encrypt(char* plaintext, int* key, char* ciphertext, int length) {
+    for (int i = 0; i < length; i++) {
+        ciphertext[i] = 'a' + (plaintext[i] - 'a' + key[i]) % ALPHABET_SIZE;
+    }
+    ciphertext[length] = '\0';
+}
+void decrypt(char* ciphertext, int* key, char* plaintext, int length) {
+    for (int i = 0; i < length; i++) {
+        plaintext[i] = 'a' + (ciphertext[i] - 'a' - key[i]) % ALPHABET_SIZE;
+    }
+    plaintext[length] = '\0';
+}
+int main() {
+    char plaintext[] = "sendmoremoney";
+    int key[] = {9, 0, 1, 7, 23, 15, 21, 14, 11, 11, 2, 8, 9};
+    char ciphertext[100];
+
+    int length = strlen(plaintext);
+    encrypt(plaintext, key, ciphertext, length);
+    printf("Ciphertext: %s\n", ciphertext);
+
+    char newPlaintext[] = "cashnotneeded";
+    int newKey[100];
+    for (int i = 0; i < length; i++) {
+        newKey[i] = (ciphertext[i] - 'a' - newPlaintext[i] + 'a') % ALPHABET_SIZE;
+        if (newKey[i] < 0) {
+            newKey[i] += ALPHABET_SIZE;
+        }
+    }
+    char decrypted[100];
+    decrypt(ciphertext, newKey, decrypted, length);
+    printf("Decrypted: %s\n", decrypted);
+
+    return 0;
+}
+
+output
+Ciphertext: xliwgmkrmr
+Decrypted: cashnotneeded
