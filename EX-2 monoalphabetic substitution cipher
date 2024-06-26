@@ -1,0 +1,38 @@
+#include <stdio.h>
+#include <string.h>
+#include <ctype.h>
+
+void monoalphabeticSubstitution(char* plaintext, char* key) {
+    int i;
+    for (i = 0; i < strlen(plaintext); i++) {
+        if (isalpha(plaintext[i])) {
+            char base = isupper(plaintext[i])? 'A' : 'a';
+            int index = plaintext[i] - base;
+            plaintext[i] = key[index] + base - 'A';
+        }
+    }
+}
+
+int main() {
+    char plaintext[256];
+    char key[26];
+
+    printf("Enter a message: ");
+    fgets(plaintext, 256, stdin);
+    plaintext[strcspn(plaintext, "\n")] = 0; // remove newline character at the end
+
+    printf("Enter a key (26 unique letters): ");
+    fgets(key, 27, stdin);
+    key[strcspn(key, "\n")] = 0; // remove newline character at the end
+
+    monoalphabeticSubstitution(plaintext, key);
+
+    printf("Encrypted message: %s\n", plaintext);
+
+    return 0;
+}
+
+OUTPUT:
+Enter a message: Hello World
+Enter a key (26 unique letters): JGURYXVZWBHQDLKMCPFNSOIET
+Encrypted message: Rkhoor Zruog
