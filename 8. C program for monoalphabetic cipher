@@ -1,0 +1,71 @@
+#include <stdio.h>
+#include <string.h>
+#include <ctype.h>
+#define ALPHABET_SIZE 26
+void generateCipherSequence(const char *keyword, char *cipher) {
+    int used[ALPHABET_SIZE] = {0}; 
+    int index = 0;
+
+    for (int i = 0; keyword[i] != '\0'; i++) {
+        if (!used[toupper(keyword[i]) - 'A']) {
+            cipher[index++] = toupper(keyword[i]);
+            used[toupper(keyword[i]) - 'A'] = 1;
+        }
+    }
+
+    for (char letter = 'A'; letter <= 'Z'; letter++) {
+        if (!used[letter - 'A']) {
+            cipher[index++] = letter;
+        }
+    }
+}
+void encrypt(const char *plaintext, const char *cipher, char *ciphertext) {
+    for (int i = 0; plaintext[i] != '\0'; i++) {
+        if (isalpha(plaintext[i])) {
+            int index = toupper(plaintext[i]) - 'A';
+            ciphertext[i] = islower(plaintext[i]) ? tolower(cipher[index]) : cipher[index];
+        } else {
+            ciphertext[i] = plaintext[i];
+        }
+    }
+    ciphertext[strlen(plaintext)] = '\0';
+}
+void decrypt(const char *ciphertext, const char *cipher, char *plaintext) {
+    for (int i = 0; ciphertext[i] != '\0'; i++) {
+        if (isalpha(ciphertext[i])) {
+            for (int j = 0; j < ALPHABET_SIZE; j++) {
+                if (toupper(ciphertext[i]) == cipher[j]) {
+                    plaintext[i] = islower(ciphertext[i]) ? tolower('A' + j) : 'A' + j;
+                    break;
+                }
+            }
+        } else {
+            plaintext[i] = ciphertext[i];
+        }
+    }
+    plaintext[strlen(ciphertext)] = '\0';
+}
+
+int main() {
+    const char *keyword = "CIPHER";
+    char cipher[ALPHABET_SIZE + 1] = {0};
+    generateCipherSequence(keyword, cipher);
+
+    printf("Cipher sequence: %s\n", cipher);
+
+    const char *plaintext = "hello world";
+    char ciphertext[100];
+    char decryptedtext[100];
+
+    encrypt(plaintext, cipher, ciphertext);
+    printf("Encrypted text: %s\n", ciphertext);
+
+    decrypt(ciphertext, cipher, decryptedtext);
+    printf("Decrypted text: %s\n", decryptedtext);
+
+    return 0;
+}
+OUTPUT:
+Cipher sequence: CIPHERABDFGJKLMNOQSTUVWXYZ
+Encrypted text: bejjm wmqjh
+Decrypted text: hello world
