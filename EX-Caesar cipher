@@ -1,0 +1,36 @@
+#include <stdio.h>
+#include <string.h>
+#include <ctype.h>
+
+void caesarCipher(char* plaintext, int k) {
+    int i;
+    for (i = 0; i < strlen(plaintext); i++) {
+        if (isalpha(plaintext[i])) {
+            char base = isupper(plaintext[i])? 'A' : 'a';
+            plaintext[i] = (plaintext[i] - base + k) % 26 + base;
+        }
+    }
+}
+
+int main() {
+    char plaintext[256];
+    int k;
+
+    printf("Enter a message: ");
+    fgets(plaintext, 256, stdin);
+    plaintext[strcspn(plaintext, "\n")] = 0; // remove newline character at the end
+
+    printf("Enter a shift value (1-25): ");
+    scanf("%d", &k);
+
+    caesarCipher(plaintext, k);
+
+    printf("Encrypted message: %s\n", plaintext);
+
+    return 0;
+}
+
+OUTPUT:
+Enter a message: Hello World
+Enter a shift value (1-25): 3
+Encrypted message: Khoor Zruog
