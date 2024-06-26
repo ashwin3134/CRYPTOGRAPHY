@@ -1,0 +1,83 @@
+#include <stdio.h>
+#include <string.h>
+#include <ctype.h>
+#define SIZE 5
+void createKeySquare(char key[], char keySquare[SIZE][SIZE]) {
+    int used[26] = {0};
+    int i, j, k;
+    char current;
+    
+    for (i = 0, k = 0; key[i] != '\0'; i++) {
+        if (key[i] == 'J') key[i] = 'I';
+        if (!used[toupper(key[i]) - 'A']) {
+            keySquare[k / SIZE][k % SIZE] = toupper(key[i]);
+            used[toupper(key[i]) - 'A'] = 1;
+            k++;
+        }
+    }
+    for (i = 0; i < 26; i++) {
+        if (!used[i] && 'A' + i != 'J') {
+            keySquare[k / SIZE][k % SIZE] = 'A' + i;
+            k++;
+        }
+    }
+}
+void findPosition(char keySquare[SIZE][SIZE], char ch, int *row, int *col) {
+    int i, j;
+    if (ch == 'J') ch = 'I';
+    for (i = 0; i < SIZE; i++) {
+        for (j = 0; j < SIZE; j++) {
+            if (keySquare[i][j] == ch) {
+                *row = i;
+                *col = j;
+                return;
+            }
+        }
+    }
+}
+void decryptDigraph(char keySquare[SIZE][SIZE], char ch1, char ch2, char *out1, char *out2) {
+    int row1, col1, row2, col2;
+    
+    findPosition(keySquare, ch1, &row1, &col1);
+    findPosition(keySquare, ch2, &row2, &col2);
+
+    if (row1 == row2) {
+        *out1 = keySquare[row1][(col1 + SIZE - 1) % SIZE];
+        *out2 = keySquare[row2][(col2 + SIZE - 1) % SIZE];
+    } else if (col1 == col2) {
+        *out1 = keySquare[(row1 + SIZE - 1) % SIZE][col1];
+        *out2 = keySquare[(row2 + SIZE - 1) % SIZE][col2];
+    } else {
+        *out1 = keySquare[row1][col2];
+        *out2 = keySquare[row2][col1];
+    }
+}
+void decryptMessage(char keySquare[SIZE][SIZE], char *cipherText, char *plainText) {
+    int i;
+    char ch1, ch2;
+    for (i = 0; i < strlen(cipherText); i += 2) {
+        ch1 = toupper(cipherText[i]);
+        ch2 = toupper(cipherText[i + 1]);
+        if (ch1 == ' ') {
+            i--;
+            continue;
+        }
+        decryptDigraph(keySquare, ch1, ch2, &plainText[i], &plainText[i + 1]);
+    }
+    plainText[i] = '\0';
+}
+int main() {
+    char key[] = "PLAYFAIR";
+    char keySquare[SIZE][SIZE];
+    char cipherText[] = "KXJEYUREBEZWEHEWRYTUHEYFSKREHEGOYFIWTTTUOLKSYCAJPOBOTEIZONTXBYBNTGONEYCUTZWRGDSONSXBOUYWRHEBAAHYUSEDQ";
+    char plainText[256] = {0};
+
+    createKeySquare(key, keySquare);
+
+    decryptMessage(keySquare, cipherText, plainText);
+    printf("Decrypted text: %s\n", plainText);
+
+    return 0;
+}
+OUTPUT:
+Decrypted text: CSPIPXIGIHXVMGHUCLNZGMAYKCIGGMRGAYBUSSNZGVCKXYPBLNRQNMDUNTSZCAIQOMNTKPIXMTVBMRQNTQWCNVAXBGHILLKAXNMITB
