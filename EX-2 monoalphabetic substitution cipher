@@ -1,7 +1,6 @@
 #include <stdio.h>
 #include <string.h>
 #include <ctype.h>
-
 void monoalphabeticSubstitution(char* plaintext, char* key) {
     int i;
     for (i = 0; i < strlen(plaintext); i++) {
@@ -12,18 +11,17 @@ void monoalphabeticSubstitution(char* plaintext, char* key) {
         }
     }
 }
-
 int main() {
     char plaintext[256];
     char key[26];
 
     printf("Enter a message: ");
     fgets(plaintext, 256, stdin);
-    plaintext[strcspn(plaintext, "\n")] = 0; // remove newline character at the end
+    plaintext[strcspn(plaintext, "\n")] = 0; 
 
     printf("Enter a key (26 unique letters): ");
     fgets(key, 27, stdin);
-    key[strcspn(key, "\n")] = 0; // remove newline character at the end
+    key[strcspn(key, "\n")] = 0; 
 
     monoalphabeticSubstitution(plaintext, key);
 
