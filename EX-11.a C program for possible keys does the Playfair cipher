@@ -1,0 +1,22 @@
+#include <stdio.h>
+int main() {
+    int alphabetSize = 26; 
+    int gridSize = 5; 
+
+    long long totalKeys = 1;
+    for (int i = 0; i < gridSize * gridSize; i++) {
+        totalKeys *= alphabetSize - i;
+    }
+    int powerOf2 = 0;
+    long long temp = 1;
+    while (temp < totalKeys) {
+        temp *= 2;
+        powerOf2++;
+    }
+    printf("The Playfair cipher has approximately 2^%d possible keys.\n", powerOf2);
+
+    return 0;
+}
+
+output
+The Playfair cipher has approximately 2^67 possible keys.
