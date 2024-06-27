@@ -1,0 +1,71 @@
+#include <stdio.h>
+#include <string.h>
+#define ALPHABET_SIZE 26
+
+void letter_frequency_attack(char* ciphertext, int top_n) {
+    char plaintext[100];
+    double max_score = 0.0;
+    int max_k = 0;
+
+    for (int k = 0; k < ALPHABET_SIZE; k++) {
+        for (int i = 0; ciphertext[i] != '\0'; i++) {
+            if (ciphertext[i] >= 'a' && ciphertext[i] <= 'z') {
+                plaintext[i] = 'a' + (ciphertext[i] - 'a' + k) % ALPHABET_SIZE;
+            } else if (ciphertext[i] >= 'A' && ciphertext[i] <= 'Z') {
+                plaintext[i] = 'A' + (ciphertext[i] - 'A' + k) % ALPHABET_SIZE;
+            } else {
+                plaintext[i] = ciphertext[i];
+            }
+        }
+        plaintext[strlen(ciphertext)] = '\0';
+
+        double score = 0.0;
+        int freq[ALPHABET_SIZE] = {0};
+        for (int i = 0; plaintext[i] != '\0'; i++) {
+            if (plaintext[i] >= 'a' && plaintext[i] <= 'z') {
+                freq[plaintext[i] - 'a']++;
+            } else if (plaintext[i] >= 'A' && plaintext[i] <= 'Z') {
+                freq[plaintext[i] - 'A']++;
+            }
+        }
+        for (int i = 0; i < ALPHABET_SIZE; i++) {
+            score += freq[i] * freq[i];
+        }
+
+        if (score > max_score) {
+            max_score = score;
+            max_k = k;
+        }
+    }
+    printf("Top plaintext: ");
+    for (int i = 0; ciphertext[i] != '\0'; i++) {
+        if (ciphertext[i] >= 'a' && ciphertext[i] <= 'z') {
+            printf("%c", 'a' + (ciphertext[i] - 'a' + max_k) % ALPHABET_SIZE);
+        } else if (ciphertext[i] >= 'A' && ciphertext[i] <= 'Z') {
+            printf("%c", 'A' + (ciphertext[i] - 'A' + max_k) % ALPHABET_SIZE);
+        } else {
+            printf("%c", ciphertext[i]);
+        }
+    }
+    printf("\n");
+}
+int main() {
+    char ciphertext[100];
+    int top_n;
+
+    printf("Enter the ciphertext: ");
+    fgets(ciphertext, sizeof(ciphertext), stdin);
+    ciphertext[strlen(ciphertext) - 1] = '\0'; // remove newline character
+
+    printf("Enter the number of top plaintexts to display: ");
+    scanf("%d", &top_n);
+
+    letter_frequency_attack(ciphertext, top_n);
+
+    return 0;
+}
+
+OUTPUT:
+Enter the ciphertext: Khoor Zruog
+Enter the number of top plaintexts to display: 1
+Top plaintext: Hello World
