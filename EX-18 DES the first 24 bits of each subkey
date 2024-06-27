@@ -1,0 +1,41 @@
+#include <stdio.h>
+#define BLOCK_SIZE 8
+
+void des_encrypt(unsigned char* plaintext, unsigned char* ciphertext, unsigned char* key) {
+    unsigned char L[BLOCK_SIZE], R[BLOCK_SIZE];
+    unsigned char K[8] = {0x01, 0x23, 0x45, 0x67, 0x89, 0xAB, 0xCD, 0xEF};
+
+    for (int i = 0; i < BLOCK_SIZE; i++) {
+        L[i] = plaintext[i];
+        R[i] = plaintext[i + BLOCK_SIZE];
+    }
+    for (int i = 0; i < 16; i++) {
+        R[i] ^= L[i] ^ K[i % 8];
+        L[i] = R[i];
+    }
+    for (int i = 0; i < BLOCK_SIZE; i++) {
+        ciphertext[i] = L[i];
+        ciphertext[i + BLOCK_SIZE] = R[i];
+    }
+}
+int main() {
+    unsigned char plaintext[16] = {0x01, 0x02, 0x03, 0x04, 0x05, 0x06, 0x07, 0x08, 0x09, 0x10, 0x11, 0x12, 0x13, 0x14, 0x15, 0x16};
+    unsigned char key[8] = {0x01, 0x23, 0x45, 0x67, 0x89, 0xAB, 0xCD, 0xEF};
+    unsigned char ciphertext[16];
+
+    des_encrypt(plaintext, ciphertext, key);
+
+    printf("Plaintext: ");
+    for (int i = 0; i < 16; i++) {
+        printf("%02x", plaintext[i]);
+    }
+    printf("\n");
+
+    printf("Ciphertext: ");
+    for (int i = 0; i < 16; i++) {
+        printf("%02x", ciphertext[i]);
+    }
+    printf("\n");
+    return 0;
+}
+OUTPUT:
