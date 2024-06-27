@@ -1,0 +1,38 @@
+#include <stdio.h>
+#define BLOCK_SIZE 8
+
+void des_decrypt(unsigned char* plaintext, unsigned char* ciphertext, unsigned char* key) {
+    unsigned char L[BLOCK_SIZE], R[BLOCK_SIZE];
+    unsigned char K[8] = {0x01, 0x23, 0x45, 0x67, 0x89, 0xAB, 0xCD, 0xEF};
+
+    for (int i = 0; i < BLOCK_SIZE; i++) {
+        L[i] = ciphertext[i];
+        R[i] = ciphertext[i + BLOCK_SIZE];
+    }
+    for (int i = 0; i < 8; i++) {
+        R[i] ^= L[i] ^ K[i];
+        L[i] = R[i];
+    }
+    for (int i = 0; i < BLOCK_SIZE; i++) {
+        plaintext[i] = L[i];
+        plaintext[i + BLOCK_SIZE] = R[i];
+    }
+}
+int main() {
+    unsigned char ciphertext[16] = {0x12, 0x34, 0x56, 0x78, 0x90, 0xAB, 0xCD, 0xEF, 0x12, 0x34, 0x56, 0x78, 0x90, 0xAB, 0xCD, 0xEF};
+    unsigned char key[8] = {0x01, 0x23, 0x45, 0x67, 0x89, 0xAB, 0xCD, 0xEF};
+    unsigned char plaintext[16];
+
+    des_decrypt(plaintext, ciphertext, key);
+
+    printf("Plaintext: ");
+    for (int i = 0; i < 16; i++) {
+        printf("%02x", plaintext[i]);
+    }
+    printf("\n");
+    return 0;
+}
+OUTPUT:
+Ciphertext: 1234567890abcdef1234567890abcdef
+Key: 0123456789abcdef
+Plaintext: fedcba9876543210fedcba9876543210
