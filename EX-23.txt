@@ -1,0 +1,178 @@
+#include <stdio.h>
+#include <stdint.h>
+
+// Initial and final permutation tables for S-DES
+const int IP[] = {2, 6, 3, 1, 4, 8, 5, 7};
+const int IP_INV[] = {4, 1, 3, 5, 7, 2, 8, 6};
+
+// Expansion and permutation table for the P4 function
+const int EP[] = {4, 1, 2, 3, 2, 3, 4, 1};
+const int P4[] = {2, 4, 3, 1};
+
+// S-DES S-boxes
+const int S0[4][4] = {
+    {1, 0, 3, 2},
+    {3, 2, 1, 0},
+    {0, 2, 1, 3},
+    {3, 1, 3, 2}
+};
+
+const int S1[4][4] = {
+    {0, 1, 2, 3},
+    {2, 0, 1, 3},
+    {3, 0, 1, 0},
+    {2, 1, 0, 3}
+};
+
+// Function to perform permutation according to a given table
+uint8_t permute(uint8_t bits, const int *perm_table, int table_size) {
+    uint8_t permuted = 0;
+    for (int i = 0; i < table_size; i++) {
+        permuted <<= 1;
+        permuted |= (bits >> (8 - perm_table[i])) & 1;
+    }
+    return permuted;
+}
+
+// Function to perform S-box substitution
+uint8_t sbox(uint8_t bits, const int sbox[4][4]) {
+    int row = ((bits & 0x80) >> 6) | ((bits & 0x04) >> 2);
+    int col = (bits & 0x78) >> 3;
+    return sbox[row][col];
+}
+
+// Key scheduling for S-DES (generates K1 and K2)
+void generate_subkeys(uint8_t key, uint8_t *K1, uint8_t *K2) {
+    uint8_t P10 = permute(key, (int[]){3, 5, 2, 7, 4, 10, 1, 9, 8, 6}, 10);
+    uint8_t LS1_1 = (P10 << 1) | (P10 >> 4 & 1);
+    uint8_t LS1_2 = (P10 << 3) | (P10 >> 2 & 3);
+    *K1 = permute((LS1_1 << 6) | LS1_2, (int[]){6, 3, 7, 4, 8, 5, 10, 9}, 8);
+    *K2 = permute((LS1_1 << 2) | LS1_2, (int[]){6, 3, 7, 4, 8, 5, 10, 9}, 8);
+}
+
+// Function to perform S-DES encryption
+uint8_t sdes_encrypt(uint8_t plaintext, uint8_t key) {
+    uint8_t K1, K2;
+    generate_subkeys(key, &K1, &K2);
+
+    uint8_t IP_result = permute(plaintext, IP, 8);
+    uint8_t L0 = IP_result >> 4;
+    uint8_t R0 = IP_result & 0x0F;
+
+    uint8_t EP_result = permute(R0, EP, 8);
+    uint8_t EP_xor_K1 = EP_result ^ K1;
+
+    uint8_t S0_input = (EP_xor_K1 & 0x18) | ((EP_xor_K1 >> 2) & 0x03);
+    uint8_t S1_input = ((EP_xor_K1 & 0x03) << 2) | (EP_xor_K1 & 0x04) | ((EP_xor_K1 >> 3) & 0x01);
+
+    uint8_t S0_output = sbox(S0_input, S0);
+    uint8_t S1_output = sbox(S1_input, S1);
+
+    uint8_t P4_input = (S0_output << 2) | S1_output;
+    uint8_t P4_result = permute(P4_input, P4, 4);
+
+    uint8_t f_function_result = (L0 ^ P4_result) << 4 | R0;
+    uint8_t ciphertext = permute(f_function_result, IP_INV, 8);
+
+    return ciphertext;
+}
+
+// Function to perform S-DES decryption
+uint8_t sdes_decrypt(uint8_t ciphertext, uint8_t key) {
+    uint8_t K1, K2;
+    generate_subkeys(key, &K1, &K2);
+
+    uint8_t IP_result = permute(ciphertext, IP, 8);
+    uint8_t L0 = IP_result >> 4;
+    uint8_t R0 = IP_result & 0x0F;
+
+    uint8_t EP_result = permute(R0, EP, 8);
+    uint8_t EP_xor_K2 = EP_result ^ K2;
+
+    uint8_t S0_input = (EP_xor_K2 & 0x18) | ((EP_xor_K2 >> 2) & 0x03);
+    uint8_t S1_input = ((EP_xor_K2 & 0x03) << 2) | (EP_xor_K2 & 0x04) | ((EP_xor_K2 >> 3) & 0x01);
+
+    uint8_t S0_output = sbox(S0_input, S0);
+    uint8_t S1_output = sbox(S1_input, S1);
+
+    uint8_t P4_input = (S0_output << 2) | S1_output;
+    uint8_t P4_result = permute(P4_input, P4, 4);
+
+    uint8_t f_function_result = (L0 ^ P4_result) << 4 | R0;
+    uint8_t plaintext = permute(f_function_result, IP_INV, 8);
+
+    return plaintext;
+}
+
+// Function to perform CTR mode encryption using S-DES
+void ctr_encrypt(uint8_t *plaintext, uint8_t *ciphertext, size_t len, uint8_t key, uint8_t counter) {
+    for (size_t i = 0; i < len; i++) {
+        uint8_t keystream = sdes_encrypt(counter, key);
+        ciphertext[i] = plaintext[i] ^ keystream;
+        counter++; // Increment counter for next block
+    }
+}
+
+// Function to perform CTR mode decryption using S-DES
+void ctr_decrypt(uint8_t *ciphertext, uint8_t *plaintext, size_t len, uint8_t key, uint8_t counter) {
+    for (size_t i = 0; i < len; i++) {
+        uint8_t keystream = sdes_encrypt(counter, key);
+        plaintext[i] = ciphertext[i] ^ keystream;
+        counter++; // Increment counter for next block
+    }
+}
+
+int main() {
+    // Test data
+    uint8_t plaintext[] = {0x12, 0x34, 0x56}; // Binary plaintext: 0001 0010 0011 0100 0101 0110
+    uint8_t key = 0xFD;                      // Binary key: 1111 1101
+    uint8_t counter = 0x00;                  // Binary counter: 0000 0000
+
+    // Buffers for ciphertext and decrypted plaintext
+    uint8_t ciphertext[sizeof(plaintext)];
+    uint8_t decrypted[sizeof(plaintext)];
+
+    size_t len = sizeof(plaintext);
+
+    // CTR Encryption
+    ctr_encrypt(plaintext, ciphertext, len, key, counter);
+
+    // Print original and encrypted binary data
+    printf("Original Binary Plaintext:\n");
+    for (size_t i = 0; i < len; i++) {
+        printf("%d%d%d%d %d%d%d%d ", (plaintext[i] >> 7) & 1, (plaintext[i] >> 6) & 1,
+               (plaintext[i] >> 5) & 1, (plaintext[i] >> 4) & 1, (plaintext[i] >> 3) & 1,
+               (plaintext[i] >> 2) & 1, (plaintext[i] >> 1) & 1, plaintext[i] & 1);
+    }
+    printf("\n");
+
+    printf("Encrypted Binary Ciphertext:\n");
+    for (size_t i = 0; i < len; i++) {
+        printf("%d%d%d%d %d%d%d%d ", (ciphertext[i] >> 7) & 1, (ciphertext[i] >> 6) & 1,
+               (ciphertext[i] >> 5) & 1, (ciphertext[i] >> 4) & 1, (ciphertext[i] >> 3) & 1,
+               (ciphertext[i] >> 2) & 1, (ciphertext[i] >> 1) & 1, ciphertext[i] & 1);
+    }
+    printf("\n");
+
+    // CTR Decryption
+    ctr_decrypt(ciphertext, decrypted, len, key, counter);
+
+    // Print decrypted binary data
+    printf("Decrypted Binary Plaintext:\n");
+    for (size_t i = 0; i < len; i++) {
+        printf("%d%d%d%d %d%d%d%d ", (decrypted[i] >> 7) & 1, (decrypted[i] >> 6) & 1,
+               (decrypted[i] >> 5) & 1, (decrypted[i] >> 4) & 1, (decrypted[i] >> 3) & 1,
+               (decrypted[i] >> 2) & 1, (decrypted[i] >> 1) & 1, decrypted[i] & 1);
+    }
+    printf("\n");
+
+    return 0;
+}
+output:
+[8:53 am, 27/06/2024] Hari: }
+[8:54 am, 27/06/2024] Hari: Original Binary Plaintext:
+0001 0010 0011 0100 0101 0110 
+Encrypted Binary Ciphertext:
+1111 0100 0000 1011 1100 0110 
+Decrypted Binary Plaintext:
+0001 0010 0011 0100 0101 0110

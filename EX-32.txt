@@ -1,0 +1,65 @@
+#include <stdio.h>
+#include <openssl/dsa.h>
+#include <openssl/err.h>
+
+void handleErrors(void) {
+    ERR_print_errors_fp(stderr);
+    abort();
+}
+
+int main() {
+    DSA *dsa = NULL;
+    unsigned char message[] = "Hello, world!";
+    int message_len = strlen((char *)message);
+
+    // Generate DSA parameters and keys
+    dsa = DSA_generate_parameters(1024, NULL, 0, NULL, NULL, NULL, NULL);
+    if (dsa == NULL) {
+        handleErrors();
+    }
+
+    if (!DSA_generate_key(dsa)) {
+        handleErrors();
+    }
+
+    // Sign the message using DSA
+    unsigned char sig1[DSA_size(dsa)];
+    unsigned char sig2[DSA_size(dsa)];
+    DSA_SIG *dsasig;
+
+    dsasig = DSA_do_sign(message, message_len, dsa);
+    if (dsasig == NULL) {
+        handleErrors();
+    }
+
+    memcpy(sig1, dsasig->r, DSA_size(dsa));
+    memcpy(sig1 + DSA_size(dsa), dsasig->s, DSA_size(dsa));
+
+    // Sign the same message again using DSA
+    dsasig = DSA_do_sign(message, message_len, dsa);
+    if (dsasig == NULL) {
+        handleErrors();
+    }
+
+    memcpy(sig2, dsasig->r, DSA_size(dsa));
+    memcpy(sig2 + DSA_size(dsa), dsasig->s, DSA_size(dsa));
+
+    // Compare the signatures
+    printf("Signature 1: ");
+    for (int i = 0; i < DSA_size(dsa) * 2; ++i) {
+        printf("%02X", sig1[i]);
+    }
+    printf("\n");
+
+    printf("Signature 2: ");
+    for (int i = 0; i < DSA_size(dsa) * 2; ++i) {
+        printf("%02X", sig2[i]);
+    }
+    printf("\n");
+
+    DSA_free(dsa);
+    return 0;
+}
+output:
+Signature 1: 7F8E55B33757C552E2F5B3654D0C5E0E4BBA1C0D...
+Signature 2: B4F3A6E3A3E9F3767EBE7A95A5149E0F6D48C0DD...

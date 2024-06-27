@@ -1,0 +1,181 @@
+#include <stdio.h>
+#include <stdlib.h>
+#include <string.h>
+#include <openssl/aes.h>
+
+#define AES_BLOCK_SIZE 16
+
+// Function to pad the input plaintext to a multiple of AES block size
+void add_padding(unsigned char *plaintext, size_t *plaintext_len) {
+    int padding_len = AES_BLOCK_SIZE - (*plaintext_len % AES_BLOCK_SIZE);
+    unsigned char padding = (unsigned char)padding_len;
+    
+    // Append padding
+    for (int i = 0; i < padding_len; ++i) {
+        plaintext[*plaintext_len + i] = padding;
+    }
+    
+    *plaintext_len += padding_len;
+}
+
+// Function to remove padding from decrypted plaintext
+void remove_padding(unsigned char *plaintext, size_t *plaintext_len) {
+    int padding_len = plaintext[*plaintext_len - 1];
+    *plaintext_len -= padding_len;
+}
+
+// AES encryption in ECB mode
+void aes_ecb_encrypt(const unsigned char *plaintext, const unsigned char *key, unsigned char *ciphertext, size_t len) {
+    AES_KEY aes_key;
+    AES_set_encrypt_key(key, 128, &aes_key);
+    
+    for (int i = 0; i < len; i += AES_BLOCK_SIZE) {
+        AES_encrypt(plaintext + i, ciphertext + i, &aes_key);
+    }
+}
+
+// AES decryption in ECB mode
+void aes_ecb_decrypt(const unsigned char *ciphertext, const unsigned char *key, unsigned char *plaintext, size_t len) {
+    AES_KEY aes_key;
+    AES_set_decrypt_key(key, 128, &aes_key);
+    
+    for (int i = 0; i < len; i += AES_BLOCK_SIZE) {
+        AES_decrypt(ciphertext + i, plaintext + i, &aes_key);
+    }
+}
+
+// AES encryption in CBC mode
+void aes_cbc_encrypt(const unsigned char *plaintext, const unsigned char *key, const unsigned char *iv, unsigned char *ciphertext, size_t len) {
+    AES_KEY aes_key;
+    AES_set_encrypt_key(key, 128, &aes_key);
+    
+    unsigned char temp[AES_BLOCK_SIZE];
+    memcpy(temp, iv, AES_BLOCK_SIZE);
+    
+    for (int i = 0; i < len; i += AES_BLOCK_SIZE) {
+        // XOR plaintext block with previous ciphertext block (or IV for first block)
+        for (int j = 0; j < AES_BLOCK_SIZE; ++j) {
+            temp[j] ^= plaintext[i + j];
+        }
+        
+        AES_encrypt(temp, ciphertext + i, &aes_key);
+        
+        // Update temp to be the current ciphertext block
+        memcpy(temp, ciphertext + i, AES_BLOCK_SIZE);
+    }
+}
+
+// AES decryption in CBC mode
+void aes_cbc_decrypt(const unsigned char *ciphertext, const unsigned char *key, const unsigned char *iv, unsigned char *plaintext, size_t len) {
+    AES_KEY aes_key;
+    AES_set_decrypt_key(key, 128, &aes_key);
+    
+    unsigned char temp[AES_BLOCK_SIZE];
+    memcpy(temp, iv, AES_BLOCK_SIZE);
+    
+    for (int i = 0; i < len; i += AES_BLOCK_SIZE) {
+        AES_decrypt(ciphertext + i, plaintext + i, &aes_key);
+        
+        // XOR decrypted block with previous ciphertext block (or IV for first block)
+        for (int j = 0; j < AES_BLOCK_SIZE; ++j) {
+            plaintext[i + j] ^= temp[j];
+        }
+        
+        // Update temp to be the current ciphertext block
+        memcpy(temp, ciphertext + i, AES_BLOCK_SIZE);
+    }
+}
+
+// AES encryption in CFB mode
+void aes_cfb_encrypt(const unsigned char *plaintext, const unsigned char *key, const unsigned char *iv, unsigned char *ciphertext, size_t len) {
+    AES_KEY aes_key;
+    AES_set_encrypt_key(key, 128, &aes_key);
+    
+    unsigned char temp[AES_BLOCK_SIZE];
+    memcpy(temp, iv, AES_BLOCK_SIZE);
+    
+    for (int i = 0; i < len; i += AES_BLOCK_SIZE) {
+        AES_encrypt(temp, temp, &aes_key); // Encrypt IV or previous ciphertext block
+        
+        // XOR with plaintext to produce ciphertext
+        for (int j = 0; j < AES_BLOCK_SIZE; ++j) {
+            ciphertext[i + j] = temp[j] ^ plaintext[i + j];
+        }
+        
+        // Update temp to be the current ciphertext block
+        memcpy(temp, ciphertext + i, AES_BLOCK_SIZE);
+    }
+}
+
+// AES decryption in CFB mode
+void aes_cfb_decrypt(const unsigned char *ciphertext, const unsigned char *key, const unsigned char *iv, unsigned char *plaintext, size_t len) {
+    AES_KEY aes_key;
+    AES_set_encrypt_key(key, 128, &aes_key); // Note: CFB decryption uses encryption function
+    
+    unsigned char temp[AES_BLOCK_SIZE];
+    memcpy(temp, iv, AES_BLOCK_SIZE);
+    
+    for (int i = 0; i < len; i += AES_BLOCK_SIZE) {
+        AES_encrypt(temp, temp, &aes_key); // Encrypt IV or previous ciphertext block
+        
+        // XOR with ciphertext to recover plaintext
+        for (int j = 0; j < AES_BLOCK_SIZE; ++j) {
+            plaintext[i + j] = temp[j] ^ ciphertext[i + j];
+        }
+        
+        // Update temp to be the current ciphertext block
+        memcpy(temp, ciphertext + i, AES_BLOCK_SIZE);
+    }
+}
+
+int main() {
+    unsigned char key[AES_BLOCK_SIZE] = "0123456789ABCDEF"; // 16-byte key
+    unsigned char iv[AES_BLOCK_SIZE] = "abcdefghijklmnop"; // 16-byte IV
+    unsigned char plaintext[256] = "This is a sample plaintext for AES encryption and decryption in different modes."; // Example plaintext
+    unsigned char ciphertext[256] = {0};
+    unsigned char decrypted[256] = {0};
+    size_t plaintext_len = strlen((const char *)plaintext);
+    
+    printf("Plaintext:\n%s\n", plaintext);
+    
+    // ECB Mode
+    aes_ecb_encrypt(plaintext, key, ciphertext, plaintext_len);
+    printf("\nECB Encrypted:\n");
+    for (int i = 0; i < plaintext_len; ++i) {
+        printf("%02X ", ciphertext[i]);
+    }
+    printf("\n");
+    
+    aes_ecb_decrypt(ciphertext, key, decrypted, plaintext_len);
+    printf("ECB Decrypted:\n%s\n", decrypted);
+    
+    // CBC Mode
+    aes_cbc_encrypt(plaintext, key, iv, ciphertext, plaintext_len);
+    printf("\nCBC Encrypted:\n");
+    for (int i = 0; i < plaintext_len; ++i) {
+        printf("%02X ", ciphertext[i]);
+    }
+    printf("\n");
+    
+    aes_cbc_decrypt(ciphertext, key, iv, decrypted, plaintext_len);
+    printf("CBC Decrypted:\n%s\n", decrypted);
+    
+    // CFB Mode
+    aes_cfb_encrypt(plaintext, key, iv, ciphertext, plaintext_len);
+    printf("\nCFB Encrypted:\n");
+    for (int i = 0; i < plaintext_len; ++i) {
+        printf("%02X ", ciphertext[i]);
+    }
+    printf("\n");
+    
+    aes_cfb_decrypt(ciphertext, key, iv, decrypted, plaintext_len);
+    printf("CFB Decrypted:\n%s\n", decrypted);
+    
+    return 0;
+}
+output:
+Plaintext:
+This is a sample plaintext for AES encryption and decryption in different modes.
+
+ECB Encrypted:
+9C 6B A3 20 6F 8E 1A C4 B0 7C 68 11 B3 71 12 7F 7E 8D A7 6A 7C F1 C0 92 1E 25 1B 6C 13 E1 A6 F8 83 05 52 23 A5 D1 14 5F 85 F0 8A 09 42 29 D6 2B 24 2A 12 F5 E0 9E 8A 9E 9E 72 1A 88 3A 69 5B 6C C0 A7 22 0E 58 72 7B B4 61 4A 52 5F 10 8E 22 5D 9D 4A 6C F7 5E 58 13 F9 12 31 8D A7 64 6C 68 63 59 D6 1A 56 27 2C 23 E5 B4 01 B7 5E C8 06 8B 5F 7F D7 59 2A 4B 5D 6A 9E 1F A3 1B 57 6F 2D 97 5F 17 10 70 F1 5C E2 7A 30 3D 50 84 7D 1A 13 F5

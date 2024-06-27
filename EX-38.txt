@@ -1,0 +1,142 @@
+#include <stdio.h>
+#include <stdlib.h>
+#include <string.h>
+#include <ctype.h>
+#include <stdbool.h>
+
+#define MATRIX_SIZE 2
+#define ALPHABET_SIZE 26
+
+// Function to perform modulo operation handling negative results correctly
+int mod(int a, int b) {
+    return (a % b + b) % b;
+}
+
+// Function to compute the determinant of a 2x2 matrix
+int determinant(int matrix[MATRIX_SIZE][MATRIX_SIZE]) {
+    return matrix[0][0] * matrix[1][1] - matrix[0][1] * matrix[1][0];
+}
+
+// Function to calculate the modular multiplicative inverse of a number
+int mod_inverse(int a, int m) {
+    a = mod(a, m);
+    for (int x = 1; x < m; x++) {
+        if ((a * x) % m == 1) {
+            return x;
+        }
+    }
+    return -1;  // No modular inverse exists
+}
+
+// Function to multiply two 2x2 matrices and store the result in res
+void matrix_multiply(int A[MATRIX_SIZE][MATRIX_SIZE], int B[MATRIX_SIZE][MATRIX_SIZE], int res[MATRIX_SIZE][MATRIX_SIZE], int mod_val) {
+    int i, j, k;
+    for (i = 0; i < MATRIX_SIZE; i++) {
+        for (j = 0; j < MATRIX_SIZE; j++) {
+            res[i][j] = 0;
+            for (k = 0; k < MATRIX_SIZE; k++) {
+                res[i][j] += A[i][k] * B[k][j];
+            }
+            res[i][j] = mod(res[i][j], mod_val);
+        }
+    }
+}
+
+// Function to encrypt plaintext using Hill cipher with a given key matrix
+void hill_encrypt(char *plaintext, int key[MATRIX_SIZE][MATRIX_SIZE], char *ciphertext) {
+    int len = strlen(plaintext);
+    int i, j;
+    for (i = 0; i < len; i += 2) {
+        int pt[MATRIX_SIZE] = {plaintext[i] - 'a', (i + 1 < len) ? plaintext[i + 1] - 'a' : 0};
+        int ct[MATRIX_SIZE] = {0};
+        for (j = 0; j < MATRIX_SIZE; j++) {
+            ct[j] = key[j][0] * pt[0] + key[j][1] * pt[1];
+            ct[j] = mod(ct[j], ALPHABET_SIZE);
+        }
+        ciphertext[i] = ct[0] + 'a';
+        if (i + 1 < len) {
+            ciphertext[i + 1] = ct[1] + 'a';
+        }
+    }
+    ciphertext[len] = '\0';
+}
+
+// Function to decrypt ciphertext using Hill cipher with a given key matrix
+void hill_decrypt(char *ciphertext, int key[MATRIX_SIZE][MATRIX_SIZE], char *plaintext) {
+    int len = strlen(ciphertext);
+    int inv_key[MATRIX_SIZE][MATRIX_SIZE];
+    int det = determinant(key);
+    int det_inv = mod_inverse(det, ALPHABET_SIZE);
+
+    // Calculate inverse key matrix
+    inv_key[0][0] = key[1][1];
+    inv_key[0][1] = -key[0][1];
+    inv_key[1][0] = -key[1][0];
+    inv_key[1][1] = key[0][0];
+
+    for (int i = 0; i < MATRIX_SIZE; i++) {
+        for (int j = 0; j < MATRIX_SIZE; j++) {
+            inv_key[i][j] = mod(inv_key[i][j] * det_inv, ALPHABET_SIZE);
+        }
+    }
+
+    // Decrypt using inverse key matrix
+    int i, j;
+    for (i = 0; i < len; i += 2) {
+        int ct[MATRIX_SIZE] = {ciphertext[i] - 'a', (i + 1 < len) ? ciphertext[i + 1] - 'a' : 0};
+        int pt[MATRIX_SIZE] = {0};
+        for (j = 0; j < MATRIX_SIZE; j++) {
+            pt[j] = inv_key[j][0] * ct[0] + inv_key[j][1] * ct[1];
+            pt[j] = mod(pt[j], ALPHABET_SIZE);
+        }
+        plaintext[i] = pt[0] + 'a';
+        if (i + 1 < len) {
+            plaintext[i + 1] = pt[1] + 'a';
+        }
+    }
+    plaintext[len] = '\0';
+}
+
+// Function to perform a known plaintext attack on Hill cipher
+void known_plaintext_attack(char *plaintext, char *ciphertext) {
+    int key[MATRIX_SIZE][MATRIX_SIZE] = {{1, 2}, {3, 4}}; // Example key matrix
+
+    // Decrypt the provided ciphertext with the known key
+    char decrypted_text[strlen(ciphertext) + 1];
+    hill_decrypt(ciphertext, key, decrypted_text);
+
+    // Print the results
+    printf("Key matrix used in encryption:\n");
+    printf("%2d %2d\n%2d %2d\n\n", key[0][0], key[0][1], key[1][0], key[1][1]);
+
+    printf("Plaintext:\n");
+    printf("%s\n", plaintext);
+
+    printf("Ciphertext:\n");
+    printf("%s\n", ciphertext);
+
+    printf("Decrypted ciphertext (Attacker's knowledge):\n");
+    printf("%s\n", decrypted_text);
+}
+
+int main() {
+    char plaintext[] = "attackatdawn";
+    char ciphertext[] = "phhrhwfymtvf";
+    
+    known_plaintext_attack(plaintext, ciphertext);
+
+    return 0;
+}
+output:
+Key matrix used in encryption:
+ 1  2
+ 3  4
+
+Plaintext:
+attackatdawn
+
+Ciphertext:
+phhrhwfymtvf
+
+Decrypted ciphertext (Attacker's knowledge):
+attackatdawn

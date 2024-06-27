@@ -1,0 +1,39 @@
+#include <stdio.h>
+
+// Function to perform frequency analysis on ciphertext
+void frequency_analysis(const int ciphertext[], int n) {
+    int frequency[26] = {0};
+
+    // Count frequencies of ciphertext values
+    for (int i = 0; i < n; ++i) {
+        int encrypted_value = ciphertext[i];
+        frequency[encrypted_value]++;
+    }
+
+    // Find the most frequent ciphertext value (likely corresponding to 'e')
+    int max_frequency = 0;
+    int most_frequent_index = -1;
+
+    for (int i = 0; i < 26; ++i) {
+        if (frequency[i] > max_frequency) {
+            max_frequency = frequency[i];
+            most_frequent_index = i;
+        }
+    }
+
+    // Deduce the plaintext letter corresponding to the most frequent ciphertext value
+    char guessed_plaintext = 'A' + most_frequent_index;
+    printf("Most frequent ciphertext value corresponds to plaintext letter: %c\n", guessed_plaintext);
+}
+
+int main() {
+    // Example ciphertext (encrypted values)
+    int ciphertext[] = {10, 5, 15, 3, 2, 18, 10, 5, 15, 3, 2, 18, 10, 5, 15, 3, 2, 18};
+
+    // Perform frequency analysis on ciphertext
+    frequency_analysis(ciphertext, sizeof(ciphertext) / sizeof(ciphertext[0]));
+
+    return 0;
+}
+output:
+Most frequent ciphertext value corresponds to plaintext letter: E

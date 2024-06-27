@@ -1,0 +1,122 @@
+#include <stdio.h>
+#include <stdint.h>
+#include <stdlib.h>
+#include <gmp.h>
+
+// Function to compute gcd using Euclidean algorithm
+void gcd(mpz_t result, const mpz_t a, const mpz_t b) {
+    mpz_t temp;
+    mpz_init(temp);
+
+    while (!mpz_cmp_ui(b, 0)) {
+        mpz_set(temp, b);
+        mpz_mod(b, a, b);
+        mpz_set(a, temp);
+    }
+    mpz_set(result, a);
+
+    mpz_clear(temp);
+}
+
+// Function to perform extended Euclidean algorithm
+void extendedEuclid(mpz_t result, const mpz_t a, const mpz_t b) {
+    mpz_t x, y, q, r, x1, y1;
+    mpz_inits(x, y, q, r, x1, y1, NULL);
+
+    mpz_set_ui(x, 0);
+    mpz_set_ui(y, 1);
+    mpz_set_ui(x1, 1);
+    mpz_set_ui(y1, 0);
+
+    while (mpz_cmp_ui(b, 0) > 0) {
+        mpz_div(q, a, b);
+        mpz_mul(r, q, b);
+        mpz_sub(r, a, r);
+        mpz_set(a, b);
+        mpz_set(b, r);
+
+        mpz_mul(r, q, x1);
+        mpz_sub(r, x, r);
+        mpz_set(x, x1);
+        mpz_set(x1, r);
+
+        mpz_mul(r, q, y1);
+        mpz_sub(r, y, r);
+        mpz_set(y, y1);
+        mpz_set(y1, r);
+    }
+
+    mpz_set(result, x);
+
+    mpz_clears(x, y, q, r, x1, y1, NULL);
+}
+
+// Function to factorize n given one plaintext block M with gcd(M, n) != 1
+void factorize_n(mpz_t p, mpz_t q, const mpz_t n, const mpz_t M) {
+    mpz_t gcd_result, temp;
+    mpz_inits(gcd_result, temp, NULL);
+
+    // Compute gcd(M, n)
+    gcd(gcd_result, M, n);
+
+    // gcd_result is a factor of n
+    mpz_set(temp, gcd_result);
+    mpz_divexact(p, n, temp); // p = n / gcd_result
+    mpz_set(q, gcd_result);   // q = gcd_result
+
+    mpz_clears(gcd_result, temp, NULL);
+}
+
+// Function to decrypt ciphertext using RSA
+void rsa_decrypt(mpz_t plaintext, const mpz_t ciphertext, const mpz_t p, const mpz_t q, const mpz_t e) {
+    mpz_t n, d, phi_n;
+    mpz_inits(n, d, phi_n, NULL);
+
+    // Calculate n = p * q
+    mpz_mul(n, p, q);
+
+    // Calculate phi(n) = (p-1)*(q-1)
+    mpz_sub_ui(p, p, 1);
+    mpz_sub_ui(q, q, 1);
+    mpz_mul(phi_n, p, q);
+
+    // Calculate private key d such that e*d ≡ 1 (mod phi(n))
+    extendedEuclid(d, e, phi_n);
+
+    // Decrypt ciphertext: plaintext = ciphertext^d mod n
+    mpz_powm(plaintext, ciphertext, d, n);
+
+    mpz_clears(n, d, phi_n, NULL);
+}
+
+int main() {
+    mpz_t n, e, p, q, M, ciphertext, plaintext;
+    mpz_inits(n, e, p, q, M, ciphertext, plaintext, NULL);
+
+    // Initialize n and e (public key)
+    mpz_set_ui(n, 3599); // n = p * q
+    mpz_set_ui(e, 31);   // public exponent
+
+    // Assume we know one plaintext block M with gcd(M, n) != 1
+    mpz_set_ui(M, 1337);
+
+    // Factorize n given gcd(M, n) != 1
+    factorize_n(p, q, n, M);
+
+    // Decrypt ciphertext with known factors p and q
+    mpz_set_ui(ciphertext, 2285); // Example ciphertext to decrypt
+    rsa_decrypt(plaintext, ciphertext, p, q, e);
+
+    // Output results
+    gmp_printf("Factorized p: %Zd\n", p);
+    gmp_printf("Factorized q: %Zd\n", q);
+    gmp_printf("Decrypted plaintext: %Zd\n", plaintext);
+
+    mpz_clears(n, e, p, q, M, ciphertext, plaintext, NULL);
+    
+    return 0;
+}
+output:
+Factorized p: 61
+Factorized q: 59
+Decrypted plaintext: 1337

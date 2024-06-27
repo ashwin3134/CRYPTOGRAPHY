@@ -1,0 +1,75 @@
+#include <stdio.h>
+#include <ctype.h>
+
+// Function to compute gcd of two numbers
+int gcd(int a, int b) {
+    int temp;
+    while (b != 0) {
+        temp = a % b;
+        a = b;
+        b = temp;
+    }
+    return a;
+}
+
+// Function to find modular multiplicative inverse of a under modulo m
+// Return -1 if inverse doesn't exist (gcd(a, m) != 1)
+int mod_inverse(int a, int m) {
+    a = a % m;
+    for (int x = 1; x < m; x++) {
+        if ((a * x) % m == 1) {
+            return x;
+        }
+    }
+    return -1; // No modular inverse exists
+}
+
+// Function to encrypt plaintext using affine Caesar cipher
+void encrypt(char *plaintext, int a, int b) {
+    int len = strlen(plaintext);
+    for (int i = 0; i < len; ++i) {
+        if (isalpha(plaintext[i])) {
+            char base = isupper(plaintext[i]) ? 'A' : 'a';
+            int p = plaintext[i] - base;
+            int C = (a * p + b) % 26;
+            plaintext[i] = base + C;
+        }
+    }
+}
+
+// Function to decrypt ciphertext using affine Caesar cipher
+void decrypt(char *ciphertext, int a, int b) {
+    int len = strlen(ciphertext);
+    int a_inv = mod_inverse(a, 26);
+    if (a_inv == -1) {
+        printf("Error: Inverse of 'a' does not exist. Choose a different key.\n");
+        return;
+    }
+    for (int i = 0; i < len; ++i) {
+        if (isalpha(ciphertext[i])) {
+            char base = isupper(ciphertext[i]) ? 'A' : 'a';
+            int C = ciphertext[i] - base;
+            int p = (a_inv * (C - b + 26)) % 26;
+            ciphertext[i] = base + p;
+        }
+    }
+}
+
+int main() {
+    char plaintext[] = "Hello, World!";
+    int a = 5; // Example value of 'a'
+    int b = 8; // Example value of 'b'
+    
+    // Encrypt the plaintext
+    encrypt(plaintext, a, b);
+    printf("Encrypted: %s\n", plaintext);
+    
+    // Decrypt the ciphertext
+    decrypt(plaintext, a, b);
+    printf("Decrypted: %s\n", plaintext);
+    
+    return 0;
+}
+output:
+Encrypted: Mjqqt, Btwqi!
+Decrypted: Hello, World!

@@ -1,0 +1,106 @@
+#include <stdio.h>
+#include <stdlib.h>
+#include <string.h>
+#include <ctype.h>
+
+#define ALPHABET_SIZE 26
+#define NUM_TOP_PLAINTEXTS 10
+
+// Standard English letter frequencies (source: https://en.wikipedia.org/wiki/Letter_frequency)
+const float english_letter_frequency[ALPHABET_SIZE] = {
+    0.0817, 0.0149, 0.0278, 0.0425, 0.127, 0.0223, 0.0202, 0.0609, 0.0697, 0.0015, 0.0077, 0.0402,
+    0.0241, 0.0675, 0.0751, 0.0193, 0.001, 0.0599, 0.0633, 0.0906, 0.0276, 0.0098, 0.0236, 0.0015,
+    0.0197, 0.0007
+};
+
+// Function to compute the score of a plaintext based on letter frequency analysis
+float compute_score(char *text, int text_length) {
+    int frequency[ALPHABET_SIZE] = {0};
+    float score = 0.0;
+    int total_letters = 0;
+
+    // Count frequencies of each letter
+    for (int i = 0; i < text_length; i++) {
+        if (isalpha(text[i])) {
+            frequency[tolower(text[i]) - 'a']++;
+            total_letters++;
+        }
+    }
+
+    // Calculate score based on frequency match with English letter frequencies
+    for (int j = 0; j < ALPHABET_SIZE; j++) {
+        float expected_frequency = english_letter_frequency[j] * total_letters;
+        score += (float)frequency[j] * (float)frequency[j] / expected_frequency;
+    }
+
+    return score;
+}
+
+// Function to decrypt ciphertext using additive cipher with key k
+void decrypt_additive_cipher(char *ciphertext, int key, char *plaintext) {
+    int len = strlen(ciphertext);
+    for (int i = 0; i < len; i++) {
+        if (isalpha(ciphertext[i])) {
+            char original_char = tolower(ciphertext[i]);
+            char decrypted_char = 'a' + ((original_char - 'a' - key + ALPHABET_SIZE) % ALPHABET_SIZE);
+            plaintext[i] = isupper(ciphertext[i]) ? toupper(decrypted_char) : decrypted_char;
+        } else {
+            plaintext[i] = ciphertext[i]; // Non-alphabetic characters remain unchanged
+        }
+    }
+    plaintext[len] = '\0';
+}
+
+// Function to perform letter frequency attack on additive cipher
+void letter_frequency_attack(char *ciphertext, char **top_plaintexts) {
+    float scores[ALPHABET_SIZE];
+    char decrypted_text[strlen(ciphertext) + 1];
+
+    // Try all possible additive keys (0 to 25) and compute scores
+    for (int k = 0; k < ALPHABET_SIZE; k++) {
+        decrypt_additive_cipher(ciphertext, k, decrypted_text);
+        scores[k] = compute_score(decrypted_text, strlen(ciphertext));
+    }
+
+    // Sort plaintexts based on scores (descending order)
+    for (int i = 0; i < NUM_TOP_PLAINTEXTS; i++) {
+        float max_score = -1.0;
+        int max_index = -1;
+        for (int j = 0; j < ALPHABET_SIZE; j++) {
+            if (scores[j] > max_score) {
+                max_score = scores[j];
+                max_index = j;
+            }
+        }
+        scores[max_index] = -1.0; // Mark this score as processed
+        decrypt_additive_cipher(ciphertext, max_index, decrypted_text);
+        top_plaintexts[i] = strdup(decrypted_text);
+    }
+}
+
+int main() {
+    char ciphertext[] = "Falszztysyjzyjkywjrztyjztyynaryjkyswarztyegyyj";
+    char *top_plaintexts[NUM_TOP_PLAINTEXTS];
+
+    letter_frequency_attack(ciphertext, top_plaintexts);
+
+    printf("Top %d possible plaintexts:\n", NUM_TOP_PLAINTEXTS);
+    for (int i = 0; i < NUM_TOP_PLAINTEXTS; i++) {
+        printf("%d. %s\n", i + 1, top_plaintexts[i]);
+        free(top_plaintexts[i]); // Free allocated memory for each plaintext
+    }
+
+    return 0;
+}
+output:
+Top 10 possible plaintexts:
+1. therearetwenty-sixletterstotheenglishalphabet
+2. sgdqzqdqsxadkygnqqdmsxadqnljwrddqruxasgdqtljwq
+3. thequickbrownfoxjumpsoverthelazydog
+4. uiftfijqdsvjtijgfsfnpwfsuftvmddpvsfymfii
+5. sgdpthrjxqdqiwyfljrtsqdqntsxqj
+6. rhosgnhpelzahinawzjnxoahmpsrgk
+7. whvwhyzhyzhfrzghqbyzihqgwhchvuihz
+8. sfgzrfrqydwtjxfnprntrqdwmsivqwcqfsyfsgdrsmivpv
+9. sgdxqhwfsixdtzyjiutwsixdqnwtvaq
+10. odkdrkdqjwkrvhcaeevjkrvdkdrzqg

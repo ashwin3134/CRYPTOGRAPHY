@@ -1,0 +1,50 @@
+#include <stdio.h>
+#include <gmp.h>
+
+void diffie_hellman(mpz_t K, mpz_t q, mpz_t a, mpz_t x_A, mpz_t x_B) {
+    mpz_t A, B;
+
+    // Alice computes A = a^x_A mod q
+    mpz_init(A);
+    mpz_powm(A, a, x_A, q);
+
+    // Bob computes B = a^x_B mod q
+    mpz_init(B);
+    mpz_powm(B, a, x_B, q);
+
+    // Both compute the shared secret key K = A^x_B mod q = B^x_A mod q
+    if (mpz_cmp(A, B) == 0) {
+        mpz_set(K, A); // K = A^x_B mod q (or B^x_A mod q)
+    } else {
+        mpz_powm(K, A, x_B, q); // K = A^x_B mod q
+    }
+
+    // Clean up
+    mpz_clears(A, B, NULL);
+}
+
+int main() {
+    mpz_t q, a, x_A, x_B, K;
+    mpz_inits(q, a, x_A, x_B, K, NULL);
+
+    // Initialize q and a (public parameters)
+    mpz_set_ui(q, 353); // Example modulus q
+    mpz_set_ui(a, 3);   // Example base a
+
+    // Alice's and Bob's secret keys
+    mpz_set_ui(x_A, 123); // Alice's secret key
+    mpz_set_ui(x_B, 456); // Bob's secret key
+
+    // Perform Diffie-Hellman key exchange
+    diffie_hellman(K, q, a, x_A, x_B);
+
+    // Print the shared secret key K
+    gmp_printf("Shared secret key K: %Zd\n", K);
+
+    // Clear allocated memory
+    mpz_clears(q, a, x_A, x_B, K, NULL);
+
+    return 0;
+}
+output:
+Shared secret key K: 127

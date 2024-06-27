@@ -1,0 +1,35 @@
+#include <stdio.h>
+#include <gmp.h>
+
+void generate_new_keys(mpz_t n, mpz_t e, mpz_t d) {
+    // Generate new modulus and keys (this function would normally generate new primes for p and q)
+    // For simplicity, assuming new keys are generated with the same modulus for illustration
+    // In practice, n should be regenerated with new primes p and q
+    mpz_set_ui(n, 3599); // Assume modulus n = 3599
+    mpz_set_ui(e, 31);   // New public exponent
+    mpz_set_ui(d, 1823); // New private exponent (if we were not changing it)
+
+    // In a real scenario, generate new p and q, then compute n = p * q
+}
+
+int main() {
+    mpz_t n, e, d;
+    mpz_inits(n, e, d, NULL);
+
+    // Assume Bob's original keys are compromised
+    // In a real scenario, we would not reuse the same modulus n after a compromise
+    generate_new_keys(n, e, d);
+
+    // Print out the new keys
+    gmp_printf("New modulus (n): %Zd\n", n);
+    gmp_printf("New public exponent (e): %Zd\n", e);
+    gmp_printf("New private exponent (d): %Zd\n", d);
+
+    mpz_clears(n, e, d, NULL);
+
+    return 0;
+}
+output:
+New modulus (n): 3599
+New public exponent (e): 31
+New private exponent (d): 1823

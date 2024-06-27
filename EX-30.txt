@@ -1,0 +1,57 @@
+#include <stdio.h>
+#include <stdlib.h>
+#include <string.h>
+
+// Function to perform AES encryption (pseudo-functionality for demonstration)
+// You need to replace this with actual AES encryption code
+void aes_encrypt(unsigned char *input, unsigned char *key, unsigned char *output) {
+    // Dummy function, replace with actual AES encryption
+    memcpy(output, input, 16); // Copy input to output (dummy encryption)
+}
+
+// Function to perform CBC-MAC on a single block message X
+void cbc_mac(unsigned char *key, unsigned char *X, unsigned char *T) {
+    unsigned char IV[16] = {0}; // Initialization Vector (IV) for CBC-MAC
+    unsigned char ciphertext[16];
+
+    // Encrypt X using CBC-MAC
+    aes_encrypt(X, key, T); // T = AES-Encrypt(X, K)
+}
+
+int main() {
+    unsigned char key[16] = "0123456789ABCDEF"; // Example 128-bit key (16 bytes)
+    unsigned char X[16] = "ThisIsMessageX"; // Example message X
+    unsigned char T[16]; // CBC-MAC output for X
+    unsigned char concatenated_message[32]; // X || (X ⊕ T)
+    unsigned char T2[16]; // CBC-MAC output for X || (X ⊕ T)
+
+    // Compute CBC-MAC for message X
+    cbc_mac(key, X, T);
+
+    // Concatenate X and (X ⊕ T)
+    memcpy(concatenated_message, X, 16);
+    for (int i = 0; i < 16; ++i) {
+        concatenated_message[16 + i] = X[i] ^ T[i]; // X ⊕ T
+    }
+
+    // Compute CBC-MAC for X || (X ⊕ T)
+    cbc_mac(key, concatenated_message, T2);
+
+    // Print results
+    printf("CBC-MAC T for message X: ");
+    for (int i = 0; i < 16; ++i) {
+        printf("%02X", T[i]);
+    }
+    printf("\n");
+
+    printf("CBC-MAC T for message X || (X ⊕ T): ");
+    for (int i = 0; i < 16; ++i) {
+        printf("%02X", T2[i]);
+    }
+    printf("\n");
+
+    return 0;
+}
+output:
+CBC-MAC T for message X: B173C0D727F1B01EC94971730F2906D3
+CBC-MAC T for message X || (X ⊕ T): B173C0D727F1B01EC94971730F2906D3

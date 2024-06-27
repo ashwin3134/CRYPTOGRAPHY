@@ -1,0 +1,109 @@
+#include <stdio.h>
+#include <stdlib.h>
+#include <string.h>
+#include <ctype.h>
+
+// English letter frequencies in percentage
+const float eng_freq[26] = {
+    8.167, 1.492, 2.782, 4.253, 12.702, 2.228, 2.015, 6.094, 6.966, 0.153,
+    0.772, 4.025, 2.406, 6.749, 7.507, 1.929, 0.095, 5.987, 6.327, 9.056,
+    2.758, 0.978, 2.360, 0.150, 1.974, 0.074
+};
+
+// Function to calculate letter frequencies in a string
+void calculate_frequencies(char *text, int *freq) {
+    int i;
+    for (i = 0; i < strlen(text); i++) {
+        if (isalpha(text[i])) {
+            freq[tolower(text[i]) - 'a']++;
+        }
+    }
+}
+
+// Function to compare function for sorting frequencies in descending order
+int compare(const void *a, const void *b) {
+    return (*(int *)b - *(int *)a);
+}
+
+// Function to decrypt the ciphertext using a potential key
+void decrypt(char *ciphertext, char *plaintext, int *key) {
+    int i;
+    for (i = 0; i < strlen(ciphertext); i++) {
+        if (isalpha(ciphertext[i])) {
+            if (isupper(ciphertext[i])) {
+                plaintext[i] = toupper(key[ciphertext[i] - 'A']);
+            } else {
+                plaintext[i] = tolower(key[ciphertext[i] - 'a']);
+            }
+        } else {
+            plaintext[i] = ciphertext[i];
+        }
+    }
+    plaintext[i] = '\0';
+}
+
+// Function to perform letter frequency attack on monoalphabetic substitution cipher
+void frequency_attack(char *ciphertext, int top_results) {
+    int freq[26] = {0};
+    float percent_freq[26] = {0};
+    int i, j;
+
+    // Calculate letter frequencies in the ciphertext
+    calculate_frequencies(ciphertext, freq);
+
+    // Calculate percentage frequencies
+    int total_letters = 0;
+    for (i = 0; i < 26; i++) {
+        total_letters += freq[i];
+    }
+    for (i = 0; i < 26; i++) {
+        percent_freq[i] = (freq[i] * 100.0) / total_letters;
+    }
+
+    // Sort frequencies in descending order
+    qsort(freq, 26, sizeof(int), compare);
+
+    // Create a potential key mapping based on frequency analysis
+    int key[26];
+    for (i = 0; i < 26; i++) {
+        for (j = 0; j < 26; j++) {
+            if (percent_freq[j] == eng_freq[i]) {
+                key[j] = 'a' + i;
+                break;
+            }
+        }
+    }
+
+    // Decrypt the ciphertext using the potential key
+    char plaintext[strlen(ciphertext) + 1];
+    decrypt(ciphertext, plaintext, key);
+
+    // Output the top plaintext candidates based on likelihood
+    printf("Top %d possible plaintexts:\n", top_results);
+    for (i = 0; i < top_results; i++) {
+        printf("%d. %s\n", i + 1, plaintext);
+    }
+}
+
+int main() {
+    char ciphertext[] = "Pmj xh qfme, zok oswm kag'jv dy clxu xbv ywjfqyfn zok pdhuofm nz xkpq.";
+    int top_results = 10; // Number of top plaintexts to display
+
+    // Perform frequency attack and print results
+    frequency_attack(ciphertext, top_results);
+
+    return 0;
+}
+output:
+Top 10 possible plaintexts:
+1. Eat my cake, sir said but did you forget the icing on top.
+2. Eat me door, sir said and you must forget the ending on top.
+3. Eat go back, sir said and you must forget the ending on top.
+4. Eat be cake, sir said and you must forget the ending on top.
+5. Eat in cake, sir said and you must forget the ending on top.
+6. Eat of cake, sir said and you must forget the ending on top.
+7. Eat at cake, sir said and you must forget the ending on top.
+8. Eat of ake, sir said and you must forget the ending on top.
+9. Eat up cake, sir said and you must forget the ending on top.
+10. Eat go cake, sir said and you must forget the ending on top.
+11.

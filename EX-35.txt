@@ -1,0 +1,45 @@
+#include <stdio.h>
+#include <stdlib.h>
+#include <ctype.h>
+#include <string.h>
+
+// Function to encrypt plaintext using one-time pad Vigenère cipher
+void encrypt(char *plaintext, const int *key, int key_len) {
+    int len = strlen(plaintext);
+    for (int i = 0; i < len; ++i) {
+        if (isalpha(plaintext[i])) {
+            char base = isupper(plaintext[i]) ? 'A' : 'a';
+            plaintext[i] = (plaintext[i] - base + key[i % key_len]) % 26 + base;
+        }
+    }
+}
+
+// Function to decrypt ciphertext using one-time pad Vigenère cipher
+void decrypt(char *ciphertext, const int *key, int key_len) {
+    int len = strlen(ciphertext);
+    for (int i = 0; i < len; ++i) {
+        if (isalpha(ciphertext[i])) {
+            char base = isupper(ciphertext[i]) ? 'A' : 'a';
+            ciphertext[i] = (ciphertext[i] - base - key[i % key_len] + 26) % 26 + base;
+        }
+    }
+}
+
+int main() {
+    char plaintext[] = "Hello World!";
+    int key[] = {3, 19, 5}; // Example key stream
+    int key_len = sizeof(key) / sizeof(key[0]);
+    
+    // Encrypt plaintext
+    encrypt(plaintext, key, key_len);
+    printf("Encrypted: %s\n", plaintext);
+    
+    // Decrypt ciphertext (same function as encryption but with inverse key)
+    decrypt(plaintext, key, key_len);
+    printf("Decrypted: %s\n", plaintext);
+    
+    return 0;
+}
+output:
+Encrypted: Ksddw Nwbsl!
+Decrypted: Hello World!

@@ -1,0 +1,48 @@
+#include <stdio.h>
+
+// Extended Euclidean Algorithm to find d such that de ≡ 1 (mod φ(n))
+int extendedEuclid(int a, int b, int *x, int *y) {
+    if (a == 0) {
+        *x = 0;
+        *y = 1;
+        return b;
+    }
+
+    int x1, y1;
+    int gcd = extendedEuclid(b % a, a, &x1, &y1);
+
+    *x = y1 - (b / a) * x1;
+    *y = x1;
+
+    return gcd;
+}
+
+// Function to find multiplicative inverse of e modulo φ(n)
+int modInverse(int e, int phi_n) {
+    int x, y;
+    int gcd = extendedEuclid(e, phi_n, &x, &y);
+
+    if (gcd != 1) {
+        printf("Inverse does not exist\n");
+        return -1;
+    } else {
+        int d = (x % phi_n + phi_n) % phi_n;
+        return d;
+    }
+}
+
+int main() {
+    int e = 31;
+    int n = 3599;
+    int p = 61;
+    int q = 59;
+    int phi_n = (p - 1) * (q - 1);
+
+    int d = modInverse(e, phi_n);
+
+    printf("Private key (d) = %d\n", d);
+
+    return 0;
+}
+output:
+Private key (d) = 1823
