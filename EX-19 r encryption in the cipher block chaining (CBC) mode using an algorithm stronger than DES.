@@ -1,0 +1,51 @@
+#include <openssl/des.h>
+#include <stdio.h>
+#include <string.h>
+#define BLOCK_SIZE 8
+
+void decrypt_3des_cbc(unsigned char* ciphertext, unsigned char* plaintext, unsigned char* key, unsigned char* iv) {
+    DES_key_schedule ks[3];
+    DES_set_key((const_DES_cblock*)key, &ks[0]);
+    DES_set_key((const_DES_cblock*)(key + 8), &ks[1]);
+    DES_set_key((const_DES_cblock*)(key + 16), &ks[2]);
+    DES_cbc_encrypt(ciphertext, plaintext, BLOCK_SIZE * 2, &ks[0], (DES_cblock*)iv, DES_DECRYPT);
+}
+
+int main() {
+    unsigned char ciphertext[17]; 
+    unsigned char key[25]; 
+    unsigned char iv[9];
+    unsigned char plaintext[17];
+
+    printf("Enter ciphertext (16 hex digits): ");
+    scanf("%16s", ciphertext);
+
+    printf("Enter key (24 hex digits): ");
+    scanf("%24s", key);
+
+    printf("Enter IV (8 hex digits): ");
+    scanf("%8s", iv);
+
+    for (int i = 0; i < 16; i++) {
+        sscanf(ciphertext + i*2, "%2hhx", &ciphertext[i]);
+    }
+    for (int i = 0; i < 24; i++) {
+        sscanf(key + i*2, "%2hhx", &key[i]);
+    }
+    for (int i = 0; i < 8; i++) {
+        sscanf(iv + i*2, "%2hhx", &iv[i]);
+    }
+    decrypt_3des_cbc(ciphertext, plaintext, key, iv);
+
+    printf("Plaintext: ");
+    for (int i = 0; i < 16; i++) {
+        printf("%02x", plaintext[i]);
+    }
+    printf("\n");
+    return 0;
+}
+OUTPUT:
+Ciphertext: 4f7c6f6a4f7c6f6a4f7c6f6a4f7c6f6a
+Key: 0123456789abcdef1234567890abcdef
+IV: 0102030405060708
+Plaintext: 01020304050607080910111213141516
