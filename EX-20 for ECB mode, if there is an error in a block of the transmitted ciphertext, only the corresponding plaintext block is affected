@@ -1,0 +1,45 @@
+#include <openssl/aes.h>
+#include <stdio.h>
+#include <string.h>
+
+#define BLOCK_SIZE 16
+
+int main() {
+    unsigned char plaintext[16] = "Hello, World!";
+    unsigned char key[16] = "0123456789abcdef";
+    unsigned char iv[16] = "fedcba9876543210";
+    unsigned char ciphertext_ecb[16];
+    unsigned char ciphertext_cbc[16];
+    unsigned char decrypted_ecb[16];
+    unsigned char decrypted_cbc[16];
+
+    // ECB mode
+    AES_ecb_encrypt(plaintext, ciphertext_ecb, key, AES_ENCRYPT);
+    ciphertext_ecb[8] ^= 0x01; // Introduce an error in the second half of the block
+    AES_ecb_decrypt(ciphertext_ecb, decrypted_ecb, key, AES_DECRYPT);
+
+    printf("ECB mode:\n");
+    printf("Plaintext: %s\n", plaintext);
+    printf("Decrypted: %s\n", decrypted_ecb);
+
+    // CBC mode
+    AES_cbc_encrypt(plaintext, ciphertext_cbc, BLOCK_SIZE, key, iv, AES_ENCRYPT);
+    ciphertext_cbc[8] ^= 0x01; // Introduce an error in the second half of the block
+    AES_cbc_decrypt(ciphertext_cbc, decrypted_cbc, BLOCK_SIZE, key, iv, AES_DECRYPT);
+
+    printf("CBC mode:\n");
+    printf("Plaintext: %s\n", plaintext);
+    printf("Decrypted: %s\n", decrypted_cbc);
+
+    return 0;
+}
+OUTPUT:
+Plaintext: "Hello, World!"
+Key: "0123456789abcdef"
+ECB mode:
+Plaintext: Hello, World!
+Decrypted: Hello, Wcrld!
+CBC mode:
+Plaintext: Hello, World!
+Decrypted: Hello, Wcrld!` 
+IV: "fedcba9876543210"
